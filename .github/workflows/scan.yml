@@ -1,0 +1,42 @@
+name: Smart Money Distribution Scanner
+
+on:
+  schedule:
+    # KST 08:30 (UTC 23:30 전날) - 장 시작 전
+    - cron: '30 23 * * 0-4'
+    # KST 15:30 (UTC 06:30) - 장 마감 후
+    - cron: '30 6 * * 1-5'
+  workflow_dispatch:  # 수동 실행 가능
+
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scanner
+        run: python main.py
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-results-${{ github.run_number }}
+          path: data/results/
+          retention-days: 30
